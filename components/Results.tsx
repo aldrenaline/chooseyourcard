@@ -1,15 +1,17 @@
 import React, { useEffect, useRef } from 'react';
-import { Recommendation, UserQuery } from '../types';
-import { Trophy, TrendingUp, AlertCircle, RefreshCw } from 'lucide-react';
+import { Recommendation, UserQuery, User } from '../types';
+import { Trophy, TrendingUp, AlertCircle, RefreshCw, Cloud } from 'lucide-react';
 import { ALL_CARDS } from '../constants';
 
 interface ResultsProps {
   recommendations: Recommendation[];
   query: UserQuery;
   onReset: () => void;
+  user: User | null;
+  onLogin: () => void;
 }
 
-const Results: React.FC<ResultsProps> = ({ recommendations, query, onReset }) => {
+const Results: React.FC<ResultsProps> = ({ recommendations, query, onReset, user, onLogin }) => {
   const resultRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -25,6 +27,26 @@ const Results: React.FC<ResultsProps> = ({ recommendations, query, onReset }) =>
   return (
     <section ref={resultRef} className="py-8 px-4 max-w-5xl mx-auto">
       
+      {/* Login Banner for Guests */}
+      {!user && (
+        <div className="mb-8 p-6 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-100 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-4 shadow-sm animate-in fade-in slide-in-from-top-4">
+          <div className="flex items-center gap-4">
+             <div className="bg-white p-2.5 rounded-full shadow-sm text-brand-blue">
+                <Cloud className="w-5 h-5" />
+             </div>
+             <div className="text-center sm:text-left">
+                <p className="text-gray-800 font-medium">Sign in to save your cards and get personalized recommendations across all your devices</p>
+             </div>
+          </div>
+          <button 
+            onClick={onLogin}
+            className="px-6 py-2.5 bg-brand-blue hover:bg-blue-700 text-white rounded-xl font-semibold shadow-md shadow-blue-500/20 transition-all whitespace-nowrap"
+          >
+            Sign In
+          </button>
+        </div>
+      )}
+
       {/* Winner Section */}
       <div className="relative mb-12">
         <div className="absolute inset-0 bg-gradient-to-r from-brand-blue/20 to-brand-purple/20 blur-3xl rounded-full transform scale-90 -z-10"></div>

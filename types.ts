@@ -17,6 +17,7 @@ export interface SavedCard {
   id: string;
   customImageUrl?: string;
   addedAt: number;
+  network?: CardNetwork;
 }
 
 export interface User {

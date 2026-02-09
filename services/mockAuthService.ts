@@ -55,9 +55,9 @@ export const mockAuthService = {
     return this.mapToUser(user);
   },
 
-  async signInWithGoogle(email: string = 'user@gmail.com'): Promise<User> {
-    // Simulate OAuth delay
-    await delay(1500);
+  async signInWithGoogle(email: string, name?: string, picture?: string): Promise<User> {
+    // Simulate slight processing delay
+    await delay(500);
     
     const db = this.getDB();
     let user = db[email];
@@ -67,17 +67,20 @@ export const mockAuthService = {
       user = {
         email,
         wallet: [],
-        name: email.split('@')[0], // Simulate name extraction from email
+        name: name || email.split('@')[0],
         authProvider: 'google',
-        profilePicture: 'https://lh3.googleusercontent.com/a/default-user=s96-c' // Mock Avatar
+        profilePicture: picture
       };
       db[email] = user;
       this.saveDB(db);
-    } else if (user.authProvider === 'email') {
-       // Convert/Link account if they previously signed up with email
-       user.authProvider = 'google';
-       user.profilePicture = 'https://lh3.googleusercontent.com/a/default-user=s96-c';
-       // We keep the passwordHash in DB in case they want to revert, but primary is now google
+    } else {
+       // Update existing user with latest Google info
+       if (user.authProvider === 'email') {
+           user.authProvider = 'google'; // Link account
+       }
+       if (name) user.name = name;
+       if (picture) user.profilePicture = picture;
+       
        db[email] = user;
        this.saveDB(db);
     }

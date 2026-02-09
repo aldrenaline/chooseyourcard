@@ -1,5 +1,5 @@
 import React from 'react';
-import { ArrowRight, ShieldCheck } from 'lucide-react';
+import { ArrowRight, ShieldCheck, UserX, Laptop, Lock } from 'lucide-react';
 
 interface HeroProps {
   onStart: () => void;
@@ -16,9 +16,10 @@ const Hero: React.FC<HeroProps> = ({ onStart, onAddCards }) => {
       </div>
 
       <div className="container mx-auto px-4 text-center max-w-4xl">
-        <div className="inline-flex items-center space-x-2 bg-white/50 backdrop-blur-sm border border-brand-blue/20 rounded-full px-4 py-1.5 mb-8 shadow-sm">
-          <span className="flex h-2 w-2 rounded-full bg-brand-green"></span>
-          <span className="text-sm font-medium text-brand-dark/70">No Card Numbers Required</span>
+        {/* Top Trust Badge */}
+        <div className="inline-flex items-center space-x-2 bg-green-50 border border-green-200 rounded-full px-5 py-2 mb-8 shadow-sm hover:shadow-md transition-shadow cursor-default">
+          <ShieldCheck className="w-5 h-5 text-green-600" />
+          <span className="text-sm font-bold text-green-800 tracking-wide">No Card Numbers Required</span>
         </div>
 
         <h1 className="text-5xl md:text-7xl font-extrabold tracking-tight mb-6 text-brand-dark">
@@ -47,15 +48,37 @@ const Hero: React.FC<HeroProps> = ({ onStart, onAddCards }) => {
           </button>
         </div>
 
-        <div className="mt-12 flex items-center justify-center gap-6 text-gray-500 text-sm">
-          <div className="flex items-center gap-2">
-             <ShieldCheck className="w-4 h-4 text-brand-green" />
-             <span>Privacy First</span>
+        {/* Enhanced Bottom Trust Indicators */}
+        <div className="mt-14 flex flex-wrap items-center justify-center gap-4 sm:gap-6">
+          <div className="flex items-center gap-3 bg-white/80 backdrop-blur border border-gray-200 px-4 py-3 rounded-xl shadow-sm hover:border-green-300 transition-colors">
+             <div className="bg-gray-100 p-2 rounded-full text-gray-600">
+                <UserX className="w-5 h-5" />
+             </div>
+             <div className="text-left">
+                <div className="text-xs text-gray-500 font-medium uppercase tracking-wider">Account</div>
+                <div className="font-bold text-gray-800">No Sign-up Needed</div>
+             </div>
           </div>
-          <div className="w-1 h-1 bg-gray-300 rounded-full"></div>
-          <div>100% Free</div>
-          <div className="w-1 h-1 bg-gray-300 rounded-full"></div>
-          <div>Client-side Only</div>
+
+          <div className="flex items-center gap-3 bg-white/80 backdrop-blur border border-gray-200 px-4 py-3 rounded-xl shadow-sm hover:border-green-300 transition-colors">
+             <div className="bg-green-100 p-2 rounded-full text-green-600">
+                <ShieldCheck className="w-5 h-5" />
+             </div>
+             <div className="text-left">
+                <div className="text-xs text-green-700 font-medium uppercase tracking-wider">Privacy</div>
+                <div className="font-bold text-gray-800">Privacy First</div>
+             </div>
+          </div>
+
+          <div className="flex items-center gap-3 bg-white/80 backdrop-blur border border-gray-200 px-4 py-3 rounded-xl shadow-sm hover:border-green-300 transition-colors">
+             <div className="bg-blue-100 p-2 rounded-full text-blue-600">
+                <Laptop className="w-5 h-5" />
+             </div>
+             <div className="text-left">
+                <div className="text-xs text-blue-700 font-medium uppercase tracking-wider">Processing</div>
+                <div className="font-bold text-gray-800">Client-side Only</div>
+             </div>
+          </div>
         </div>
       </div>
     </section>

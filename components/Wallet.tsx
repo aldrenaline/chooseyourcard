@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Plus, Trash2, X, Loader2, Image as ImageIcon, Cloud, Lock, Wifi } from 'lucide-react';
 import { ALL_CARDS, BANK_NAMES } from '../constants';
-import { SavedCard, CardIssuer, User, CardDefinition } from '../types';
+import { SavedCard, CardIssuer, User, CardDefinition, CardNetwork } from '../types';
 import { fetchCardImage } from '../services/imageService';
 
 interface WalletProps {
@@ -17,6 +17,7 @@ const Wallet: React.FC<WalletProps> = ({ savedCards, onUpdateWallet, user, onLog
   // Modal State
   const [selectedIssuer, setSelectedIssuer] = useState<CardIssuer | ''>('');
   const [selectedCardId, setSelectedCardId] = useState<string>('');
+  const [selectedNetwork, setSelectedNetwork] = useState<CardNetwork | ''>('');
   const [isAdding, setIsAdding] = useState(false);
 
   // Derived lists
@@ -24,7 +25,7 @@ const Wallet: React.FC<WalletProps> = ({ savedCards, onUpdateWallet, user, onLog
   const cardsForSelectedIssuer = ALL_CARDS.filter(c => c.issuer === selectedIssuer);
 
   const handleAddCard = async () => {
-    if (!selectedCardId) return;
+    if (!selectedCardId || !selectedNetwork) return;
     
     setIsAdding(true);
     const cardDef = ALL_CARDS.find(c => c.id === selectedCardId);
@@ -40,7 +41,8 @@ const Wallet: React.FC<WalletProps> = ({ savedCards, onUpdateWallet, user, onLog
     const newCard: SavedCard = {
       id: selectedCardId,
       customImageUrl: imageUrl,
-      addedAt: Date.now()
+      addedAt: Date.now(),
+      network: selectedNetwork
     };
 
     onUpdateWallet([...savedCards, newCard]);
@@ -55,6 +57,7 @@ const Wallet: React.FC<WalletProps> = ({ savedCards, onUpdateWallet, user, onLog
   const resetModal = () => {
     setSelectedIssuer('');
     setSelectedCardId('');
+    setSelectedNetwork('');
     setIsModalOpen(false);
   };
 
@@ -139,6 +142,7 @@ const Wallet: React.FC<WalletProps> = ({ savedCards, onUpdateWallet, user, onLog
                   onChange={(e) => {
                     setSelectedIssuer(e.target.value as CardIssuer);
                     setSelectedCardId('');
+                    setSelectedNetwork('');
                   }}
                   className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-brand-blue outline-none transition-all appearance-none"
                 >
@@ -169,12 +173,30 @@ const Wallet: React.FC<WalletProps> = ({ savedCards, onUpdateWallet, user, onLog
                 </select>
               </div>
 
+              {/* Step 3: Card Network */}
+              <div className={`space-y-2 transition-opacity duration-300 ${selectedCardId ? 'opacity-100' : 'opacity-50 pointer-events-none'}`}>
+                <label className="text-sm font-semibold text-gray-700">3. Card Network</label>
+                <select 
+                  value={selectedNetwork}
+                  onChange={(e) => setSelectedNetwork(e.target.value as CardNetwork)}
+                  disabled={!selectedCardId}
+                  className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-brand-blue outline-none transition-all appearance-none"
+                >
+                  <option value="">Select Network...</option>
+                  <option value="Visa">Visa</option>
+                  <option value="MasterCard">Mastercard</option>
+                  <option value="Rupay">RuPay</option>
+                  <option value="Amex">American Express</option>
+                  <option value="Diners">Diners Club</option>
+                </select>
+              </div>
+
               {/* Action Button */}
               <button
                 onClick={handleAddCard}
-                disabled={!selectedCardId || isAdding}
+                disabled={!selectedCardId || !selectedNetwork || isAdding}
                 className={`w-full py-3.5 rounded-xl font-bold text-white shadow-lg shadow-brand-blue/20 flex items-center justify-center gap-2 transition-all
-                  ${!selectedCardId || isAdding ? 'bg-gray-300 cursor-not-allowed' : 'bg-brand-blue hover:bg-blue-700 hover:scale-[1.02]'}`}
+                  ${!selectedCardId || !selectedNetwork || isAdding ? 'bg-gray-300 cursor-not-allowed' : 'bg-brand-blue hover:bg-blue-700 hover:scale-[1.02]'}`}
               >
                 {isAdding ? (
                   <>
@@ -201,11 +223,13 @@ const RealisticCard: React.FC<{ cardDef: CardDefinition, savedCard: SavedCard, o
   const imageUrl = !imageError ? (savedCard.customImageUrl || cardDef.imageUrl) : null;
   const isFallback = !imageUrl;
   
+  const network = savedCard.network || cardDef.network;
+  
   const NetworkLogo = () => {
-    if (cardDef.network === 'Visa') {
+    if (network === 'Visa') {
         return <div className="text-white font-bold italic tracking-wider text-xl" style={{ textShadow: '1px 1px 2px rgba(0,0,0,0.5)' }}>VISA</div>;
     }
-    if (cardDef.network === 'MasterCard') {
+    if (network === 'MasterCard') {
         return (
             <div className="flex -space-x-3 opacity-90">
                 <div className="w-8 h-8 rounded-full bg-red-600/90 mix-blend-screen"></div>
@@ -213,17 +237,17 @@ const RealisticCard: React.FC<{ cardDef: CardDefinition, savedCard: SavedCard, o
             </div>
         );
     }
-    if (cardDef.network === 'Amex' || cardDef.issuer === 'AMEX') {
+    if (network === 'Amex' || (!network && cardDef.issuer === 'AMEX')) {
         return (
             <div className="bg-[#2671b9] text-white text-[10px] font-bold border-2 border-white px-1.5 py-0.5 rounded tracking-tighter uppercase">
                 American Express
             </div>
         );
     }
-    if (cardDef.network === 'Diners') {
+    if (network === 'Diners') {
         return <div className="text-white text-xs font-bold uppercase tracking-widest">Diners Club</div>;
     }
-    if (cardDef.network === 'Rupay') {
+    if (network === 'Rupay') {
         return (
              <div className="flex flex-col items-end leading-none">
                  <span className="text-orange-500 font-bold text-lg -mb-1">Ru</span>

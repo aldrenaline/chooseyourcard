@@ -4,9 +4,11 @@ import Wallet from './components/Wallet';
 import QueryForm from './components/QueryForm';
 import Results from './components/Results';
 import HowItWorks from './components/HowItWorks';
+import PrivacySection from './components/PrivacySection';
 import Footer from './components/Footer';
 import Header from './components/Header';
 import AuthModal from './components/AuthModal';
+import { INITIAL_WALLET_IDS } from './constants';
 import { Recommendation, UserQuery, SavedCard, User } from './types';
 import { getRecommendations } from './services/recommendationService';
 import { mockAuthService } from './services/mockAuthService';
@@ -42,13 +44,9 @@ const App: React.FC = () => {
     init();
   }, []);
 
-  // Nudge logic: If user adds > 2 cards as guest, ask to sign up
+  // Nudge logic: Removed to reduce friction as per request
   useEffect(() => {
-    if (!user && savedCards.length > 2 && savedCards.length < 4) {
-      // Simple debounce/check could be added here, for now relying on user action flow
-      // We don't want to spam, so maybe only on specific triggers.
-      // Leaving passive banner in Wallet for now as per "Nudge" requirement in UX
-    }
+    // Passive banner in Wallet is sufficient
   }, [savedCards, user]);
 
   const loadLocalWallet = () => {
@@ -57,10 +55,17 @@ const App: React.FC = () => {
       try {
         const parsed = JSON.parse(stored);
         if (Array.isArray(parsed) && typeof parsed[0] === 'string') {
-          const migrated: SavedCard[] = parsed.map(id => ({ id, addedAt: Date.now() }));
-          setSavedCards(migrated);
+           const migrated: SavedCard[] = parsed.map(id => ({ id, addedAt: Date.now() }));
+           setSavedCards(migrated);
         } else {
-          setSavedCards(parsed);
+           // If parsed array is empty, maybe load defaults? 
+           // Better to respect empty state if user cleared it.
+           // But if it's the very first time (null stored), initializeDefault handles it.
+           if (parsed.length === 0) {
+             setSavedCards([]);
+           } else {
+             setSavedCards(parsed);
+           }
         }
       } catch (e) {
         initializeDefault();
@@ -71,7 +76,14 @@ const App: React.FC = () => {
   };
 
   const initializeDefault = () => {
-    setSavedCards([]);
+    // Start with empty wallet for new users
+    const defaults: SavedCard[] = INITIAL_WALLET_IDS.map(id => ({
+      id,
+      addedAt: Date.now()
+    }));
+    setSavedCards(defaults);
+    // Persist defaults so they don't disappear on reload
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(defaults));
   };
 
   // Update wallet (handles both Local and Cloud sync)
@@ -90,18 +102,14 @@ const App: React.FC = () => {
       // Sync locally
       localStorage.setItem(STORAGE_KEY, JSON.stringify(newCards));
       
-      // Onboarding nudge check
-      if (newCards.length === 3) {
-        setAuthModalMode('signup');
-        setIsAuthModalOpen(true);
-      }
+      // Removed automatic auth modal trigger to allow seamless anonymous usage
     }
     
     // Refresh recommendations if needed
     if (currentQuery) {
-      const cardIds = newCards.map(c => c.id);
-      const recs = getRecommendations(cardIds, currentQuery);
-      setRecommendations(recs);
+        const cardIds = newCards.map(c => c.id);
+        const recs = getRecommendations(cardIds, currentQuery);
+        setRecommendations(recs);
     }
   };
 
@@ -115,10 +123,6 @@ const App: React.FC = () => {
     
     setUser({ ...loggedInUser, wallet: mergedWallet });
     setSavedCards(mergedWallet);
-    
-    // Clear local storage to avoid confusion? Or keep as backup? 
-    // Requirement says "Remove LocalStorage limitation banner", implies switch of source.
-    // We can leave local storage as is or clear it. Let's leave it but ignore it while logged in.
   };
 
   const handleLogout = async () => {
@@ -157,15 +161,15 @@ const App: React.FC = () => {
 
       <main>
         <Hero 
-          onStart={() => scrollToSection('find-card')} 
-          onAddCards={() => scrollToSection('wallet')} 
+            onStart={() => scrollToSection('find-card')} 
+            onAddCards={() => scrollToSection('wallet')} 
         />
         
         <Wallet 
-          savedCards={savedCards} 
-          onUpdateWallet={handleUpdateWallet} 
-          user={user}
-          onLoginClick={() => { setAuthModalMode('signin'); setIsAuthModalOpen(true); }}
+            savedCards={savedCards} 
+            onUpdateWallet={handleUpdateWallet} 
+            user={user}
+            onLoginClick={() => { setAuthModalMode('signin'); setIsAuthModalOpen(true); }}
         />
         
         <QueryForm onSearch={handleSearch} />
@@ -175,10 +179,14 @@ const App: React.FC = () => {
             recommendations={recommendations} 
             query={currentQuery}
             onReset={handleReset}
+            user={user}
+            onLogin={() => { setAuthModalMode('signin'); setIsAuthModalOpen(true); }}
           />
         )}
 
         <HowItWorks />
+        
+        <PrivacySection />
       </main>
 
       <Footer />

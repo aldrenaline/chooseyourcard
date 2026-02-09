@@ -1455,7 +1455,7 @@ export const POPULAR_MERCHANTS = [
   'Tata Neu', 'Cleartrip', 'Agoda', 'Netflix', 'Spotify'
 ];
 
-export const INITIAL_WALLET_IDS = ['hdfc-diners-black', 'icici-amazon', 'axis-magnus', 'sbi-cashback'];
+export const INITIAL_WALLET_IDS: string[] = [];
 
 export const BANK_NAMES: Record<CardIssuer, string> = {
   'HDFC': 'HDFC Bank',
