@@ -7,7 +7,6 @@ import HowItWorks from './components/HowItWorks';
 import Footer from './components/Footer';
 import Header from './components/Header';
 import AuthModal from './components/AuthModal';
-import { INITIAL_WALLET_IDS } from './constants';
 import { Recommendation, UserQuery, SavedCard, User } from './types';
 import { getRecommendations } from './services/recommendationService';
 import { mockAuthService } from './services/mockAuthService';
@@ -58,10 +57,10 @@ const App: React.FC = () => {
       try {
         const parsed = JSON.parse(stored);
         if (Array.isArray(parsed) && typeof parsed[0] === 'string') {
-           const migrated: SavedCard[] = parsed.map(id => ({ id, addedAt: Date.now() }));
-           setSavedCards(migrated);
+          const migrated: SavedCard[] = parsed.map(id => ({ id, addedAt: Date.now() }));
+          setSavedCards(migrated);
         } else {
-           setSavedCards(parsed);
+          setSavedCards(parsed);
         }
       } catch (e) {
         initializeDefault();
@@ -72,11 +71,7 @@ const App: React.FC = () => {
   };
 
   const initializeDefault = () => {
-    const defaults: SavedCard[] = INITIAL_WALLET_IDS.map(id => ({
-        id,
-        addedAt: Date.now()
-    }));
-    setSavedCards(defaults);
+    setSavedCards([]);
   };
 
   // Update wallet (handles both Local and Cloud sync)
@@ -97,16 +92,16 @@ const App: React.FC = () => {
       
       // Onboarding nudge check
       if (newCards.length === 3) {
-         setAuthModalMode('signup');
-         setIsAuthModalOpen(true);
+        setAuthModalMode('signup');
+        setIsAuthModalOpen(true);
       }
     }
     
     // Refresh recommendations if needed
     if (currentQuery) {
-        const cardIds = newCards.map(c => c.id);
-        const recs = getRecommendations(cardIds, currentQuery);
-        setRecommendations(recs);
+      const cardIds = newCards.map(c => c.id);
+      const recs = getRecommendations(cardIds, currentQuery);
+      setRecommendations(recs);
     }
   };
 
@@ -162,15 +157,15 @@ const App: React.FC = () => {
 
       <main>
         <Hero 
-            onStart={() => scrollToSection('find-card')} 
-            onAddCards={() => scrollToSection('wallet')} 
+          onStart={() => scrollToSection('find-card')} 
+          onAddCards={() => scrollToSection('wallet')} 
         />
         
         <Wallet 
-            savedCards={savedCards} 
-            onUpdateWallet={handleUpdateWallet} 
-            user={user}
-            onLoginClick={() => { setAuthModalMode('signin'); setIsAuthModalOpen(true); }}
+          savedCards={savedCards} 
+          onUpdateWallet={handleUpdateWallet} 
+          user={user}
+          onLoginClick={() => { setAuthModalMode('signin'); setIsAuthModalOpen(true); }}
         />
         
         <QueryForm onSearch={handleSearch} />
