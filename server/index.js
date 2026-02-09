@@ -28,6 +28,11 @@ app.use('/api/', apiLimiter);
 let isMockMode = false;
 let mockDb = []; // In-memory store for testing
 
+// Simple Health Check Route
+app.get('/', (req, res) => {
+  res.send('✅ CYC Backend is Running! Status: ' + (isMockMode ? 'Mock Mode' : 'Connected to DB'));
+});
+
 if (process.env.MONGODB_URI) {
   mongoose.connect(process.env.MONGODB_URI)
     .then(() => console.log('✅ MongoDB Connected'))
