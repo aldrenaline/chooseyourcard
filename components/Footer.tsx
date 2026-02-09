@@ -1,7 +1,11 @@
 import React from 'react';
-import { Lock } from 'lucide-react';
+import { Lock, BarChart2 } from 'lucide-react';
 
-const Footer: React.FC = () => {
+interface FooterProps {
+  onAdminClick?: () => void;
+}
+
+const Footer: React.FC<FooterProps> = ({ onAdminClick }) => {
   return (
     <footer className="bg-white border-t border-gray-200 pt-16 pb-8 mt-20">
       <div className="container mx-auto px-4 text-center">
@@ -25,8 +29,17 @@ const Footer: React.FC = () => {
            <span>Rates Subject to Bank Change</span>
         </div>
 
-        <div className="text-xs text-gray-300">
-          &copy; 2026 Choose Your Card | chooseyourcard.in
+        <div className="flex items-center justify-center gap-4 text-xs text-gray-300">
+          <span>&copy; 2026 Choose Your Card | chooseyourcard.in</span>
+          {onAdminClick && (
+            <button 
+              onClick={onAdminClick}
+              className="flex items-center gap-1 hover:text-gray-500 transition-colors"
+              title="Admin Dashboard"
+            >
+              <BarChart2 className="w-3 h-3" />
+            </button>
+          )}
         </div>
       </div>
     </footer>

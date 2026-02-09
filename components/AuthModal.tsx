@@ -1,8 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { X, Mail, Lock, Loader2, ShieldCheck, ArrowRight } from 'lucide-react';
 import { mockAuthService } from '../services/mockAuthService';
 import { User as UserType } from '../types';
-import { useGoogleLogin } from '@react-oauth/google';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -17,37 +16,68 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onLoginSuccess, 
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const googleButtonRef = useRef<HTMLDivElement>(null);
 
-  // Use the hook instead of the component to avoid iframe/popup blocking issues in some environments
-  const loginWithGoogle = useGoogleLogin({
-    onSuccess: async (tokenResponse) => {
-      setIsLoading(true);
-      try {
-        // Fetch user details using the access token
-        const res = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
-            headers: { Authorization: `Bearer ${tokenResponse.access_token}` },
-        });
-        
-        if (!res.ok) throw new Error('Failed to fetch user profile');
-        
-        const data = await res.json();
-        
-        await handleGoogleSuccess({
-            email: data.email,
-            name: data.name,
-            picture: data.picture
-        });
-      } catch (e) {
-        console.error(e);
-        setError('Failed to load Google profile');
-        setIsLoading(false);
+  // Initialize Google Sign-In
+  useEffect(() => {
+    const initializeGoogle = () => {
+      if (typeof window !== 'undefined' && (window as any).google && googleButtonRef.current) {
+        try {
+          (window as any).google.accounts.id.initialize({
+            client_id: '793727705178-3o5lt7bhnqdbkmluivi6p8stpi19cip0.apps.googleusercontent.com',
+            callback: handleGoogleCallback
+          });
+          
+          (window as any).google.accounts.id.renderButton(
+            googleButtonRef.current,
+            { 
+              theme: 'outline', 
+              size: 'large', 
+              type: 'standard',
+              shape: 'rectangular',
+              text: 'continue_with',
+              logo_alignment: 'left',
+              width: '100%' // Allow resizing to container
+            }
+          );
+        } catch (e) {
+          console.error("Google Sign-In initialization failed", e);
+        }
       }
-    },
-    onError: () => {
-        setError('Google Sign-In failed');
-        setIsLoading(false);
+    };
+
+    if (isOpen) {
+      // If script is already loaded
+      if ((window as any).google) {
+        initializeGoogle();
+      } else {
+        // Wait for script (rare case if index.html script is async)
+        const checkGoogle = setInterval(() => {
+          if ((window as any).google) {
+            initializeGoogle();
+            clearInterval(checkGoogle);
+          }
+        }, 100);
+        return () => clearInterval(checkGoogle);
+      }
     }
-  });
+  }, [isOpen]);
+
+  const handleGoogleCallback = async (response: any) => {
+    setIsLoading(true);
+    setError('');
+    try {
+      // Pass the JWT credential directly to service for decoding
+      const user = await mockAuthService.signInWithGoogle(response.credential);
+      onLoginSuccess(user);
+      onClose();
+    } catch (e) {
+      console.error(e);
+      setError('Failed to authenticate with Google.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   if (!isOpen) return null;
 
@@ -73,19 +103,6 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onLoginSuccess, 
     }
   };
 
-  const handleGoogleSuccess = async (userInfo: { email: string; name: string; picture: string }) => {
-    try {
-        // We are already loading from the hook's onSuccess
-        const user = await mockAuthService.signInWithGoogle(userInfo.email, userInfo.name, userInfo.picture);
-        onLoginSuccess(user);
-        onClose();
-    } catch (e) {
-        setError('Failed to authenticate with our servers.');
-    } finally {
-        setIsLoading(false);
-    }
-  };
-
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden flex flex-col">
@@ -101,21 +118,9 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onLoginSuccess, 
         </div>
 
         <div className="p-6">
-          {/* Custom Google Button */}
-          <div className="w-full mb-6">
-            <button
-                type="button"
-                onClick={() => loginWithGoogle()}
-                className="w-full flex items-center justify-center gap-3 bg-white border border-gray-200 rounded-xl py-3.5 text-gray-700 font-semibold hover:bg-gray-50 hover:border-gray-300 transition-all shadow-sm group"
-            >
-                <svg className="w-5 h-5" viewBox="0 0 24 24">
-                    <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
-                    <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
-                    <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
-                    <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
-                </svg>
-                <span>Continue with Google</span>
-            </button>
+          {/* Official Google Button Container */}
+          <div className="w-full mb-6 flex justify-center min-h-[40px]">
+            <div ref={googleButtonRef} className="w-full"></div>
           </div>
 
           {/* Divider */}

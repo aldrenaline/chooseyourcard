@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CYC Backend API Tester</title>
+    <style>
+        body { font-family: -apple-system, system-ui, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; background: #f0f2f5; }
+        .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        h1 { color: #1a1a1a; }
+        button { background: #2563eb; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 600; margin-right: 10px; margin-bottom: 10px; }
+        button:hover { background: #1d4ed8; }
+        button.secondary { background: #64748b; }
+        pre { background: #1e293b; color: #a5f3fc; padding: 15px; border-radius: 8px; overflow-x: auto; font-size: 13px; min-height: 100px; }
+        .status { font-weight: bold; padding: 5px 10px; border-radius: 4px; display: inline-block; font-size: 12px; }
+        .status.online { background: #dcfce7; color: #166534; }
+        .status.offline { background: #fee2e2; color: #991b1b; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    </style>
+</head>
+<body>
+    <h1>🛠️ CYC Backend API Tester</h1>
+    
+    <div class="card">
+        <h3>Server Status: <span id="serverStatus" class="status offline">Checking...</span></h3>
+        <p>Use this tool to verify endpoints and generate dummy data.</p>
+        
+        <div>
+            <button onclick="checkHealth()">Ping Server</button>
+            <button onclick="seedData()" class="secondary">🌱 Seed Mock Data (50 entries)</button>
+        </div>
+    </div>
+
+    <div class="grid">
+        <div class="card">
+            <h3>1. Log a Search (POST)</h3>
+            <button onclick="logSearch()">Log Test Search</button>
+            <div id="logResult"></div>
+        </div>
+
+        <div class="card">
+            <h3>2. Get Analytics (GET)</h3>
+            <button onclick="getAnalytics()">Fetch Top Stats</button>
+            <div id="analyticsResult"></div>
+        </div>
+    </div>
+
+    <div class="card">
+        <h3>3. Admin Dashboard Data (GET)</h3>
+        <button onclick="getDashboard()">Fetch Volume Trends</button>
+        <pre id="dashboardOutput">Waiting for request...</pre>
+    </div>
+
+    <script>
+        const API = 'http://localhost:5000/api';
+
+        async function checkHealth() {
+            try {
+                // We use analytics as a health check
+                const res = await fetch(`${API}/search/analytics`);
+                if(res.ok) {
+                    document.getElementById('serverStatus').textContent = 'ONLINE';
+                    document.getElementById('serverStatus').className = 'status online';
+                } else {
+                    throw new Error('Status ' + res.status);
+                }
+            } catch (e) {
+                document.getElementById('serverStatus').textContent = 'OFFLINE / ERROR';
+                document.getElementById('serverStatus').className = 'status offline';
+                alert('Backend not reachable. Run "node server/index.js"');
+            }
+        }
+
+        async function seedData() {
+            const res = await fetch(`${API}/test/seed`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({count: 50}) });
+            const data = await res.json();
+            alert(JSON.stringify(data, null, 2));
+            getAnalytics(); // Refresh
+        }
+
+        async function logSearch() {
+            const payload = {
+                merchant: "Test Merchant " + Math.floor(Math.random()*100),
+                category: "Shopping",
+                amount: Math.floor(Math.random() * 5000),
+                recommendedCard: "test-card-id",
+                recommendedCardName: "Test Bank Credit Card",
+                effectiveRate: 5.0,
+                device: "desktop",
+                timestamp: new Date()
+            };
+
+            const res = await fetch(`${API}/search/log`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            const data = await res.json();
+            document.getElementById('logResult').innerHTML = `<pre>Status: ${res.status}\nID: ${data.id}</pre>`;
+        }
+
+        async function getAnalytics() {
+            const res = await fetch(`${API}/search/analytics`);
+            const data = await res.json();
+            
+            let html = '<strong>Top Merchants:</strong><ul>';
+            data.topMerchants?.forEach(m => html += `<li>${m._id}: ${m.count}</li>`);
+            html += '</ul>';
+            document.getElementById('analyticsResult').innerHTML = html;
+        }
+
+        async function getDashboard() {
+            const res = await fetch(`${API}/search/dashboard`);
+            const data = await res.json();
+            document.getElementById('dashboardOutput').textContent = JSON.stringify(data, null, 2);
+        }
+
+        // Initial check
+        checkHealth();
+    </script>
+</body>
+</html>

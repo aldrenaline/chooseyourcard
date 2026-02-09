@@ -2,6 +2,7 @@ import React, { useEffect, useRef } from 'react';
 import { Recommendation, UserQuery, User } from '../types';
 import { Trophy, TrendingUp, AlertCircle, RefreshCw, Cloud } from 'lucide-react';
 import { ALL_CARDS } from '../constants';
+import { analyticsService } from '../services/analyticsService';
 
 interface ResultsProps {
   recommendations: Recommendation[];
@@ -13,11 +14,23 @@ interface ResultsProps {
 
 const Results: React.FC<ResultsProps> = ({ recommendations, query, onReset, user, onLogin }) => {
   const resultRef = useRef<HTMLDivElement>(null);
+  const hasLogged = useRef(false);
 
   useEffect(() => {
     // Smooth scroll to results on mount
     resultRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  }, []);
+
+    // Log analytics (ensure we only log once per unique query/result set)
+    if (recommendations.length > 0 && !hasLogged.current) {
+      analyticsService.logSearch(query, recommendations[0], user);
+      hasLogged.current = true;
+    }
+
+    // Reset logger if query changes significantly (optional, depending on parent behavior)
+    return () => {
+        hasLogged.current = false;
+    };
+  }, [query, recommendations, user]); // Dependencies ensure fresh logs on new search
 
   if (recommendations.length === 0) return null;
 

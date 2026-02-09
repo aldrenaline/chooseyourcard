@@ -8,6 +8,7 @@ import PrivacySection from './components/PrivacySection';
 import Footer from './components/Footer';
 import Header from './components/Header';
 import AuthModal from './components/AuthModal';
+import AdminDashboard from './components/AdminDashboard';
 import { INITIAL_WALLET_IDS } from './constants';
 import { Recommendation, UserQuery, SavedCard, User } from './types';
 import { getRecommendations } from './services/recommendationService';
@@ -28,6 +29,9 @@ const App: React.FC = () => {
   const [currentQuery, setCurrentQuery] = useState<UserQuery | null>(null);
   const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
 
+  // State: View Mode
+  const [showAdmin, setShowAdmin] = useState(false);
+
   // Initialize App
   useEffect(() => {
     const init = async () => {
@@ -44,11 +48,6 @@ const App: React.FC = () => {
     init();
   }, []);
 
-  // Nudge logic: Removed to reduce friction as per request
-  useEffect(() => {
-    // Passive banner in Wallet is sufficient
-  }, [savedCards, user]);
-
   const loadLocalWallet = () => {
     const stored = localStorage.getItem(STORAGE_KEY);
     if (stored) {
@@ -58,9 +57,6 @@ const App: React.FC = () => {
            const migrated: SavedCard[] = parsed.map(id => ({ id, addedAt: Date.now() }));
            setSavedCards(migrated);
         } else {
-           // If parsed array is empty, maybe load defaults? 
-           // Better to respect empty state if user cleared it.
-           // But if it's the very first time (null stored), initializeDefault handles it.
            if (parsed.length === 0) {
              setSavedCards([]);
            } else {
@@ -82,16 +78,13 @@ const App: React.FC = () => {
       addedAt: Date.now()
     }));
     setSavedCards(defaults);
-    // Persist defaults so they don't disappear on reload
     localStorage.setItem(STORAGE_KEY, JSON.stringify(defaults));
   };
 
-  // Update wallet (handles both Local and Cloud sync)
   const handleUpdateWallet = async (newCards: SavedCard[]) => {
     setSavedCards(newCards);
     
     if (user) {
-      // Sync with cloud
       try {
         const updatedUser = await mockAuthService.syncWallet(newCards);
         setUser(updatedUser);
@@ -99,13 +92,9 @@ const App: React.FC = () => {
         console.error("Sync failed", e);
       }
     } else {
-      // Sync locally
       localStorage.setItem(STORAGE_KEY, JSON.stringify(newCards));
-      
-      // Removed automatic auth modal trigger to allow seamless anonymous usage
     }
     
-    // Refresh recommendations if needed
     if (currentQuery) {
         const cardIds = newCards.map(c => c.id);
         const recs = getRecommendations(cardIds, currentQuery);
@@ -114,13 +103,8 @@ const App: React.FC = () => {
   };
 
   const handleLoginSuccess = async (loggedInUser: User) => {
-    // Merge logic: If we have local cards, merge them with account
     const localWallet = savedCards;
-    
-    // Only merge if we actually have something different than defaults potentially
-    // For simplicity, always try merge
     const mergedWallet = await mockAuthService.mergeWallets(localWallet);
-    
     setUser({ ...loggedInUser, wallet: mergedWallet });
     setSavedCards(mergedWallet);
   };
@@ -128,7 +112,7 @@ const App: React.FC = () => {
   const handleLogout = async () => {
     await mockAuthService.signOut();
     setUser(null);
-    loadLocalWallet(); // Revert to local state
+    loadLocalWallet();
   };
 
   const handleSearch = (query: UserQuery) => {
@@ -149,6 +133,10 @@ const App: React.FC = () => {
     const el = document.getElementById(id);
     el?.scrollIntoView({ behavior: 'smooth' });
   };
+
+  if (showAdmin) {
+    return <AdminDashboard onBack={() => setShowAdmin(false)} />;
+  }
 
   return (
     <div className="min-h-screen font-sans selection:bg-brand-blue/20">
@@ -189,7 +177,7 @@ const App: React.FC = () => {
         <PrivacySection />
       </main>
 
-      <Footer />
+      <Footer onAdminClick={() => setShowAdmin(true)} />
 
       <AuthModal 
         isOpen={isAuthModalOpen} 

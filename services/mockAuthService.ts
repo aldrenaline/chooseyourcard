@@ -1,4 +1,5 @@
 import { SavedCard, User } from '../types';
+import { jwtDecode } from 'jwt-decode';
 
 // Keys for localStorage simulation
 const DB_USERS_KEY = 'cyc_db_users'; // Stores all users: { email: { password, wallet... } }
@@ -55,10 +56,11 @@ export const mockAuthService = {
     return this.mapToUser(user);
   },
 
-  async signInWithGoogle(email: string, name?: string, picture?: string): Promise<User> {
-    // Simulate slight processing delay
-    await delay(500);
-    
+  async signInWithGoogle(credential: string): Promise<User> {
+    // Decode the Google JWT
+    const decoded: any = jwtDecode(credential);
+    const { email, name, picture } = decoded;
+
     const db = this.getDB();
     let user = db[email];
 
